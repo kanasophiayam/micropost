@@ -59,7 +59,7 @@ class User extends Authenticatable
     }
 }
 
-public function unfollow($userId)
+    public function unfollow($userId)
 {
     // confirming if already following
     $exist = $this->is_following($userId);
@@ -78,15 +78,69 @@ public function unfollow($userId)
 }
 
 
-public function is_following($userId) {
+    public function is_following($userId) {
     return $this->followings()->where('follow_id', $userId)->exists();
 }
 
-  public function feed_microposts()
+    public function feed_microposts()
     {
         $follow_user_ids = $this->followings()-> pluck('users.id')->toArray();
         $follow_user_ids[] = $this->id;
         return Micropost::whereIn('user_id', $follow_user_ids);
+    }
+    
+    
+    //favorite parent
+
+    public function favoritings()
+    {
+        return $this->belongsToMany(Micropost::class, 'favorite', 'user_id', 'micro_id')->withTimestamps();
+    }
+    
+    
+    
+    //favorite child
+    
+    public function favorite($microId)
+    {
+        // confirm if already favorite
+        $exist = $this->is_favoritings($microId);
+        
+    
+    
+        if ($exist) {
+            // do nothing if already favoriting
+            return false;
+            
+            
+        } else {
+            // favorite if not following
+            $this->favoritings()->attach($microId);
+            return true;
+        }
+    }
+    
+    public function unfavorite($microId)
+    {
+        // confirming if already favorite
+        $exist = $this->is_favoritings($microId);
+        
+    
+        if ($exist) {
+            // stop favoriting if favoriting
+            $this->favoritings()->detach($microId);
+            return true;
+            
+            
+        } else {
+            // do nothing if not following
+            return false;
+        }
+    }
+    
+    
+    public function is_favoritings($microId) {
+        return $this->favoritings()->where('micro_id', $microId)->exists();
     }
     
 }
